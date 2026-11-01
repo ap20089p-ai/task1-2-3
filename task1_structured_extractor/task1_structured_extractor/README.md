@@ -1,0 +1,303 @@
+# AI-Powered Structured Data Extractor
+
+A robust Python application for extracting structured invoice information from unstructured text documents using the Google Gemini API. The extracted output is enforced via Gemini's structured output schema, validated with Pydantic, pretty-printed to the terminal, and saved to `output/invoice_output.json`.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+  - [1. Navigate to Project Directory](#1-navigate-to-the-project-directory)
+  - [2. Create and Activate Virtual Environment](#2-create-and-activate-virtual-environment)
+  - [3. Install Dependencies](#3-install-dependencies)
+  - [4. Configure Environment Variables](#4-configure-environment-variables)
+- [How to Run](#how-to-run)
+  - [Option 1: Interactive Mode](#option-1-interactive-mode-recommended)
+  - [Option 2: Pass a File Path Directly](#option-2-pass-a-file-path-as-a-command-line-argument)
+  - [Option 3: Pass Raw Text Directly](#option-3-pass-raw-invoice-text-directly)
+- [Input & Output Example](#input--output-example)
+- [Running Unit Tests](#running-unit-tests)
+- [Troubleshooting & Common Issues](#troubleshooting--common-issues)
+- [Limitations & Notes](#limitations--notes)
+
+---
+
+## Features
+
+- **Google Gemini API Integration**: Uses the official `google-genai` SDK with `gemini-2.5-flash` by default.
+- **Strict Schema Enforcement**: Utilizes Gemini's native structured outputs (`response_schema=Invoice`) combined with Pydantic v2 data validation.
+- **Robust Field Validation**:
+  - Validates email formatting (`email-validator`)
+  - Ensures strictly positive amounts (`condecimal(gt=0)`)
+  - Parses dates into ISO-8601 format (`YYYY-MM-DD`)
+  - Forbids unknown/hallucinated fields (`extra='forbid'`)
+- **Transient Error Handling**: Includes exponential backoff retries via `tenacity` for temporary `503 UNAVAILABLE` model spikes.
+- **Multiple Input Modes**: Run interactively with menu options, supply text files via CLI arguments, or paste text directly.
+- **Persistent Storage**: Automatically exports validated JSON data to the `output/` directory.
+- **Unit Test Coverage**: Automated test suite (`pytest`) verifying schema constraints and edge cases without spending API credits.
+
+---
+
+## Project Structure
+
+```text
+task1_structured_extractor/
+├── main.py              # Application entry point and CLI workflow
+├── schemas.py           # Pydantic schema definitions (Invoice model)
+├── prompts.py           # Parameterized few-shot prompt builder
+├── requirements.txt     # Python package dependencies
+├── .env.example         # Example environment configuration file
+├── .gitignore           # Git ignore file (excludes secrets and .venv)
+├── README.md            # Project documentation and setup guide
+├── sample_data/
+│   └── invoice.txt      # Sample raw invoice text file
+├── output/
+│   ├── .gitkeep
+│   └── invoice_output.json # Validated JSON output
+└── tests/
+    └── test_schema.py   # Unit tests for Pydantic models
+```
+
+---
+
+## Prerequisites
+
+- **Python**: Version 3.10 or higher installed. Check with:
+  ```bash
+  python --version
+  ```
+- **Gemini API Key**: Obtain a free API key from [Google AI Studio](https://aistudio.google.com/).
+
+---
+
+## Installation & Setup
+
+### 1. Navigate to the project directory
+
+Open your terminal or command prompt and change to the project directory:
+
+```bash
+cd e:\internship\task1_structured_extractor\task1_structured_extractor
+```
+
+### 2. Create and activate virtual environment
+
+#### Windows (PowerShell):
+```powershell
+# Create the virtual environment
+python -m venv .venv
+
+# If you encounter script execution restrictions, allow script execution for this session:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+# Activate the environment
+.\.venv\Scripts\Activate.ps1
+```
+
+#### Windows (Command Prompt - CMD):
+```cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
+
+#### macOS / Linux:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+> **Note**: When activated, your terminal prompt will be prefixed with `(.venv)`.
+
+### 3. Install dependencies
+
+Upgrade `pip` and install all required packages:
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Create your `.env` configuration file by copying `.env.example`:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+
+**Windows (CMD):**
+```cmd
+copy .env.example .env
+```
+
+**macOS / Linux:**
+```bash
+cp .env.example .env
+```
+
+Open `.env` in any text editor and replace the placeholder with your actual Gemini API key:
+
+```env
+GEMINI_API_KEY=your_actual_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+> ⚠️ **Security Notice**: Never commit `.env` or share your API key publicly.
+
+---
+
+## How to Run
+
+### Option 1: Interactive Mode (Recommended)
+
+Run the main script without any arguments:
+
+```bash
+python main.py
+```
+
+You will see an interactive prompt:
+```text
+Select invoice input source:
+  [1] Default sample file (sample_data/invoice.txt)
+  [2] Custom file path
+  [3] Type / paste invoice text directly
+
+Enter choice (1/2/3, default 1):
+```
+
+- Press `Enter` (or type `1`) to run with the built-in `sample_data/invoice.txt`.
+- Type `2` to supply a path to any custom text file on your system.
+- Type `3` to paste raw invoice text directly into your terminal.
+
+---
+
+### Option 2: Pass a file path as a command-line argument
+
+You can directly pass the path to an invoice file:
+
+```bash
+python main.py sample_data/invoice.txt
+```
+
+Or a custom file:
+
+```bash
+python main.py "C:\path\to\another_invoice.txt"
+```
+
+---
+
+### Option 3: Pass raw invoice text directly
+
+You can also pass raw text inside quotes as a command-line argument:
+
+```bash
+python main.py "INVOICE #INV-999 Customer: Alice Doe Email: alice@example.com Amount: $450 Due: 2026-11-15 Status: Paid"
+```
+
+---
+
+## Input & Output Example
+
+### Input (`sample_data/invoice.txt`):
+```text
+INVOICE
+
+Invoice Number: INV-2026-101
+Customer Name: Rahul Sharma
+Email: rahul@example.com
+Amount: INR 15000
+Due Date: 25 October 2026
+Payment Status: Pending
+```
+
+### Terminal Output:
+```text
+Using default sample: ...\sample_data\invoice.txt
+
+Processing invoice...
+
+EXTRACTED INVOICE INFORMATION
+-----------------------------------
+{
+    "invoice_number": "INV-2026-101",
+    "customer_name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "amount": 15000.0,
+    "due_date": "2026-10-25",
+    "payment_status": "Pending"
+}
+
+Extraction successful. JSON saved to: ...\output\invoice_output.json
+```
+
+---
+
+## Running Unit Tests
+
+The test suite validates data types, field constraints, email formats, and unexpected field handling without calling the Gemini API.
+
+To run the tests:
+
+```bash
+python -m pytest -v
+```
+
+Expected output:
+```text
+tests/test_schema.py::test_valid_invoice PASSED
+tests/test_schema.py::test_invalid_email_is_rejected PASSED
+tests/test_schema.py::test_negative_amount_is_rejected PASSED
+tests/test_schema.py::test_unexpected_field_is_rejected PASSED
+============================== 4 passed in 0.15s ==============================
+```
+
+---
+
+## Troubleshooting & Common Issues
+
+### 1. `Permission denied: '...\\.venv\\Scripts\\python.exe'` (Errno 13)
+- **Cause**: An existing `.venv` folder is locked by another running terminal, editor process, or antivirus.
+- **Solution**:
+  1. Close any running Python terminals or VS Code processes.
+  2. In PowerShell, delete the existing `.venv` directory:
+     ```powershell
+     Remove-Item -Recurse -Force .venv
+     ```
+     *(In CMD: `rmdir /s /q .venv`)*
+  3. Recreate the environment:
+     ```powershell
+     python -m venv .venv
+     ```
+
+### 2. `cannot be loaded because running scripts is disabled on this system`
+- **Cause**: Windows PowerShell script execution policy prevents running unsigned activation scripts.
+- **Solution**: Run this in PowerShell before activating:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+  .\.venv\Scripts\Activate.ps1
+  ```
+
+### 3. `RuntimeError: GEMINI_API_KEY is missing`
+- **Cause**: The `.env` file does not exist or does not contain `GEMINI_API_KEY`.
+- **Solution**: Ensure `.env` is created in the project root with `GEMINI_API_KEY=your_key_here`.
+
+### 4. `503 Model Busy / UNAVAILABLE`
+- **Cause**: Gemini service temporary capacity limit.
+- **Solution**: The script contains built-in exponential backoff retries (up to 5 attempts) and will retry automatically. If issues persist, verify `GEMINI_MODEL=gemini-2.5-flash` in your `.env`.
+
+### 5. `ValidationError`
+- **Cause**: Input text does not contain required invoice fields, or amounts/emails/dates are formatted incorrectly.
+- **Solution**: Check that the input text contains an invoice number, customer name, valid email address, positive numerical amount, and a recognized due date.
+
+---
+
+## Limitations & Notes
+
+- **OCR Required for Images/PDFs**: This pipeline currently processes raw text. If you have scanned PDFs or images, extract the text using OCR prior to running this script.
+- **Verification Recommended**: While Pydantic guarantees field schema consistency and formatting, always review critical financial extractions before executing automated payments or accounting updates.

@@ -1,0 +1,8 @@
+INVOICE
+
+Invoice Number: INV-2026-101
+Customer Name: Rahul Sharma
+Email: rahul@example.com
+Amount: INR 15000
+Due Date: 25 October 2026
+Payment Status: Pending

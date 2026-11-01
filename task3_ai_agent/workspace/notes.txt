@@ -1,0 +1,20 @@
+# Project Nexus: Autonomous Multi-Tool Agent Platform
+Date: October 2026
+Version: 2.4.0
+Status: Production-Ready
+
+## Project Overview
+Project Nexus is an autonomous multi-tool agent framework designed for high-reliability research, mathematical problem solving, and document ingestion. The system integrates Google Gemini large language models with LangChain tool calling to orchestrate actions dynamically.
+
+## Key Features
+1. Autonomous Tool Selection: Dynamically selects the most suitable tool based on semantic intent and user constraints.
+2. AST-Based Safe Math Engine: Executes complex arithmetic expressions without unrestricted eval(), protecting against arbitrary code execution.
+3. Isolated Workspace File Access: Provides restricted access to text, markdown, CSV, and JSON data with directory traversal protection.
+4. Live Web Search Integration: Retrieves real-time web results with source URLs and snippets via DuckDuckGo.
+5. Untrusted Data Guardrails: Wraps all external and local file inputs in passive data envelopes to prevent prompt injection attacks.
+6. Execution Telemetry & Tracing: Tracks step-by-step tool invocation parameters and outputs with privacy-conscious logging.
+
+## Roadmap & Milestone Targets
+- Feature Delivery Velocity: Completed 6 core features across 3 sprint iterations.
+- Active Contributors: 4 core senior engineers and 2 research interns.
+- Code Coverage Goal: Maintain greater than 90% unit test coverage across all tool implementations.
